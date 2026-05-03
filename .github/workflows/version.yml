@@ -1,0 +1,52 @@
+name: Auto Versioning
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'public/manifest.json'
+
+jobs:
+  version:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Git Identity
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Bump version
+        id: bump
+        run: |
+          # package.json のバージョンを上げる
+          npm version patch -m "chore: bump version to %s [skip ci]"
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          
+          # manifest.json のバージョンも同期する
+          node -e "
+            const fs = require('fs');
+            const manifest = JSON.parse(fs.readFileSync('./public/manifest.json'));
+            manifest.version = '$NEW_VERSION';
+            fs.writeFileSync('./public/manifest.json', JSON.stringify(manifest, null, 2));
+          "
+          
+          git add public/manifest.json
+          git commit --amend --no-edit
+
+      - name: Push changes
+        run: |
+          git push origin main --follow-tags

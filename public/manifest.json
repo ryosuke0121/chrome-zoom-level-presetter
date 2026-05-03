@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Chrome Zoom Level Presetter",
+  "version": "1.0.0",
+  "description": "Presets for Chrome zoom levels to switch easily.",
+  "permissions": ["storage", "zoom"],
+  "action": {
+    "default_popup": "index.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
